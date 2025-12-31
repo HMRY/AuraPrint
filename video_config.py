@@ -14,14 +14,16 @@ class Config:
     # 采指纹日志文件
     FINGERPRINT_LOG = './log/'   
     # 日志级别 ：DEBUG/INFO/WARNING/ERROR
-    LOG_LEVEL = logging.INFO 
+    LOG_LEVEL = logging.DEBUG
 
     #采集指纹参数配置
     MAX_THREADS = 1
-    ITAG_DL_TIMEOUT = 20  # 单个itag下载最大时间，单位为秒
-    MIN_ITAG_DL_SIZE = 20960  # 单个itag下载最小文件大小，单位为字节
-    WEBSOURCE_TIMEOUT = 10 #获取websource的超时时间，单位为秒
+    WEBSOURCE_TIMEOUT = 5 #websource下载超时时间，单位为秒
+    WEBSOURCE_MAX_RETRIES = 1  # websource下载最大次数（包含重试）
+    ITAG_DL_TIMEOUT = 5  # 单个itag下载超时时间，单位为秒
     MAX_RETRIES = 1  # itag下载最大重试次数
+    MIN_ITAG_DL_SIZE = 20480  # 单个itag下载最小文件大小，单位为字节
+ 
 
 
 # 记录匹配日志到txt文件
