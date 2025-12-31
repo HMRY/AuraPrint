@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from itertools import accumulate
 from concurrent.futures import ThreadPoolExecutor
 
-from video_config import Config, log_match_result
+from video_config import Config, auraprint_log
 
 # 需要下载yt-dlp
 # pip install yt-dlp
@@ -67,9 +67,9 @@ class Box():
             with open(videopath + '.part', 'rb') as f:
                 header_data = f.read(10000)
         else:
-            log_match_result(
-                f"【解析MP4格式元数据未下载该视频】{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {video_name} {str(self.itag)} 文件不存在",
-                Config.FINGERPRINT_LOG, "error")
+            auraprint_log(
+                f"【解析MP4格式元数据未下载该视频】{video_name} {str(self.itag)} 文件不存在",
+                Config.FINGERPRINT_LOG, "warning")
             # 设置标志，表示文件不存在
             self.file_not_found = True
             return
@@ -103,9 +103,9 @@ class Box():
             sidx = sidx[8:]
         else:
             # 记录版本错误日志
-            log_match_result(
-                f"【解析MP4格式元数据版本错误】{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} video: {video_name} itag: {str(self.itag)} 版本: {str(self.Version)}",
-                Config.FINGERPRINT_LOG, "error")
+            auraprint_log(
+                f"【解析MP4格式元数据版本错误】  {video_name}  {str(self.itag)}  {str(self.Version)}",
+                Config.FINGERPRINT_LOG, "warning")
             self.Earliest_Presentation_Time = int.from_bytes(sidx[:4], byteorder='big')
             sidx = sidx[4:]
             self.First_Offset = int.from_bytes(sidx[:4], byteorder='big')
@@ -149,9 +149,9 @@ class Box():
             with open(videopath + '.part', 'rb') as f:
                 header_data = f.read(10000)
         else:
-            log_match_result(
-                f"【解析WebM格式元数据未下载该视频】{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} video: {video_name} itag: {str(self.itag)} 文件不存在",
-                Config.FINGERPRINT_LOG, "error")
+            auraprint_log(
+                f"【解析WebM格式元数据未下载该视频】 {video_name}  {str(self.itag)} 文件不存在",
+                Config.FINGERPRINT_LOG, "warning")
             # 设置标志，表示文件不存在
             self.file_not_found = True
             return
@@ -205,7 +205,7 @@ class Video():
         self.down_path = Config.FINGERPRINT_DOWN
 
     def get_websource(self):
-        # log_match_result(f"【开始get websource】 {self.url} ",Config.FINGERPRINT_LOG,"debug")
+        # auraprint_log(f"【开始get websource】 {self.url} ",Config.FINGERPRINT_LOG,"debug")
         if not os.path.exists(self.down_path + r'websource/'):
             os.makedirs(self.down_path + r'websource/')
         response_path = self.down_path + r'websource/' + self.video_name + '.html'
@@ -214,7 +214,7 @@ class Video():
         max_retries = Config.WEBSOURCE_MAX_RETRIES
         while not os.path.exists(response_path) and retry_count < max_retries:
             # 方案1
-            # log_match_result(f"【开始下载 websource】 {self.url} ",Config.FINGERPRINT_LOG,"debug")
+            # auraprint_log(f"【开始下载 websource】 {self.url} ",Config.FINGERPRINT_LOG,"debug")
             # response = requests.get(self.url)#请求
             # if response.status_code == 200:
             #     with open(self.down_path + r'websource/' + self.video_name + '.html', 'w', encoding='utf-8') as f:
@@ -223,7 +223,7 @@ class Video():
             try:
                 # 开始记录请求时间
                 start_time = time.time()
-                log_match_result(f"【开始下载 websource】video: {self.video_name} 第 {retry_count}/{max_retries} 次尝试 URL: {self.url}", 
+                auraprint_log(f"【开始下载 websource】 {self.video_name} 第 {retry_count}/{max_retries} 次尝试 URL: {self.url}", 
                                Config.FINGERPRINT_LOG, "debug")
 
                 # 设置超时时间
@@ -232,7 +232,7 @@ class Video():
                 # 检查请求状态
                 if response.status_code == 200:
                     elapsed_time = time.time() - start_time  # 计算请求耗时
-                    log_match_result(f"【websource下载完成】耗时 {elapsed_time:.2f} 秒 {self.url}",
+                    auraprint_log(f"【websource下载完成】耗时 {elapsed_time:.2f} 秒 {self.url}",
                                      Config.FINGERPRINT_LOG, "info")
 
                     # 保存下载的网页内容
@@ -240,22 +240,22 @@ class Video():
                         f.write(response.text)
                     break  # 下载成功，退出循环
                 else:
-                    log_match_result(f"【请求失败】video: {self.video_name} 状态码: {response.status_code} URL: {self.url} (第 {retry_count}/{max_retries} 次)",
+                    auraprint_log(f"【请求失败】 {self.video_name} 状态码: {response.status_code} URL: {self.url} (第 {retry_count}/{max_retries} 次)",
                                      Config.FINGERPRINT_LOG, "error")
 
             except requests.exceptions.Timeout:
-                log_match_result(f"【请求超时】video: {self.video_name} 超过 {Config.WEBSOURCE_TIMEOUT} 秒未响应 URL: {self.url} (第 {retry_count}/{max_retries} 次)", 
+                auraprint_log(f"【请求超时】 {self.video_name} 超过 {Config.WEBSOURCE_TIMEOUT} 秒未响应 URL: {self.url} (第 {retry_count}/{max_retries} 次)", 
                                Config.FINGERPRINT_LOG, "error")
             except requests.exceptions.RequestException as e:
-                log_match_result(f"【请求异常】video: {self.video_name} URL: {self.url} 错误: {e} (第 {retry_count}/{max_retries} 次)", 
+                auraprint_log(f"【请求异常】 {self.video_name} URL: {self.url} 错误: {e} (第 {retry_count}/{max_retries} 次)", 
                                Config.FINGERPRINT_LOG, "error")
         
         # 检查是否达到最大重试次数
         if retry_count >= max_retries and not os.path.exists(response_path):
-            log_match_result(f"【websource下载最终失败】video: {self.video_name} 已达到最大重试次数({max_retries}次) URL: {self.url}", 
-                           Config.FINGERPRINT_LOG, "error")
+            auraprint_log(f"【websource下载最终失败】 {self.video_name} 已达到最大重试次数({max_retries}次) URL: {self.url}", 
+                           Config.FINGERPRINT_LOG, "warning")
         elif os.path.exists(response_path):
-            log_match_result(f"【Websource 已存在】Video name： {self.video_name} ", Config.FINGERPRINT_LOG, "debug")
+            auraprint_log(f"【Websource 已存在】 {self.video_name} ", Config.FINGERPRINT_LOG, "debug")
 
     def analyse_websource(self):
         html_path = self.down_path + r'websource/' + self.video_name + '.html'
@@ -278,23 +278,32 @@ class Video():
         self.itag_vcodec = {}
         self.itag_indexrange = {}
         self.itag_contentlength = {}
-        self.itag_quality = {}
+        # 使用集合跟踪已添加的itag，避免重复
+        added_itags = set()
+        
         for param in service_tracking_params:
             itag = param.get('itag')
             is_drc = param.get('isDrc')  # None/True
             if is_drc:
                 itag = str(itag) + "-drc"
 
+            # 检查itag是否已添加，避免重复
+            if itag in added_itags:
+                auraprint_log(f"【跳过重复itag】 {self.video_name}  {str(itag)} 在adaptiveFormats中重复出现，跳过",
+                               Config.FINGERPRINT_LOG, "debug")
+                continue
+
             # print("【itag】",itag)
 
             if itag in (self.video_mp4_itag + self.video_webm_itag):
                 indexRange = param.get('indexRange', {'start': 0, 'end': 0})  # modify
                 if indexRange == {'start': 0, 'end': 0}:
-                    log_match_result(
-                        f"【解析websourse该itag没有indexRange】{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} video: {self.video_name} itag: {str(itag)} URL: {self.url}",
-                        Config.FINGERPRINT_LOG, "error")
+                    auraprint_log(
+                        f"【解析websourse该itag没有indexRange】  {self.video_name}  {str(itag)} ",
+                        Config.FINGERPRINT_LOG, "warning")
                 else:
                     self.itag_list.append(itag)  # 只下载有IndexRange的
+                    added_itags.add(itag)  # 标记为已添加
 
                     width = param['width']
                     height = param['height']
@@ -313,11 +322,12 @@ class Video():
             elif itag in (self.audio_mp4_itag + self.audio_webm_itag):
                 indexRange = param.get('indexRange', {'start': 0, 'end': 0})  # modify
                 if indexRange == {'start': 0, 'end': 0}:
-                    log_match_result(
-                        f"【解析websourse该itag不合法的indexRange】{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} video: {self.video_name} itag: {str(itag)} URL: {self.url}",
-                        Config.FINGERPRINT_LOG, "error")
+                    auraprint_log(
+                        f"【解析websourse该itag不合法的indexRange】 {self.video_name}  {str(itag)} ",
+                        Config.FINGERPRINT_LOG, "warning")
                 else:
                     self.itag_list.append(itag)  # 只下载有IndexRange的
+                    added_itags.add(itag)  # 标记为已添加
 
                     quality = param['quality']
                     self.itag_quality[itag] = quality  #
@@ -334,14 +344,14 @@ class Video():
     def analyse_video(self):
         self.itag_box = {}
         fingerprint_list = []
-        # log_match_result(f"【正在解析指纹】",Config.FINGERPRINT_LOG,"debug")
+        # auraprint_log(f"【正在解析指纹】",Config.FINGERPRINT_LOG,"debug")
 
         # 去重：确保每个itag只处理一次
         processed_itags = set()
         for itag in self.itag_list:
             # 如果itag已经处理过，跳过
             if itag in processed_itags:
-                log_match_result(f"【跳过重复itag】video: {self.video_name} itag: {itag} 已处理过，跳过",
+                auraprint_log(f"【跳过重复itag】 {self.video_name}  {itag} 已处理过，跳过",
                                Config.FINGERPRINT_LOG, "debug")
                 continue
             processed_itags.add(itag)
@@ -355,7 +365,7 @@ class Video():
             
             # 检查文件是否存在（如果文件不存在，box会有file_not_found属性）
             if hasattr(box, 'file_not_found') and box.file_not_found:
-                log_match_result(f"【跳过解析指纹】video: {self.video_name} itag: {itag} 原因: 文件不存在",
+                auraprint_log(f"【跳过解析指纹】 {self.video_name}  {itag} 原因: 文件不存在",
                                Config.FINGERPRINT_LOG, "warning")
                 continue
             
@@ -363,7 +373,7 @@ class Video():
                 duration_list = [1000 * x // box.Timescale for x in box.duration_list]
                 timeline = [0] + list(accumulate(duration_list))
                 condition = (contentLength == end + 1 + sum(box.reference_list))
-                log_match_result(
+                auraprint_log(
                     f"【正在解析指纹】{itag:<9}, {self.itag_contentlength[itag]:<12}, 'fmp4', {end + 1 + sum(box.reference_list):<12}, {(condition if condition == False else ''):<8}, {contentLength - (end + 1 + sum(box.reference_list))}",
                     Config.FINGERPRINT_LOG, "debug")
                 if itag != 140 or (itag == 140 and condition):
@@ -376,12 +386,12 @@ class Video():
                 fingerprint_list.append([self.ID, self.url, itag, quality, 'webm', vcodec, start, end, contentLength,
                                          '/'.join(map(str, box.track_list)), '1000', '/'.join(map(str, duration_list)),
                                          '/'.join(map(str, box.timeline))])
-                log_match_result(
+                auraprint_log(
                     f"【正在解析指纹】{itag:<9}, {self.itag_contentlength[itag]:<12}, 'webm', {end + 1 + sum(box.track_list):<12}, {(contentLength == end + 1 + sum(box.track_list)):<8}, {contentLength - (end + 1 + sum(box.track_list))}",
                     Config.FINGERPRINT_LOG, "debug")
             else:
-                log_match_result(f"【解析指纹失败】video: {self.video_name} itag: {itag} 原因: 无法识别格式或元数据解析失败",
-                               Config.FINGERPRINT_LOG, "error")
+                auraprint_log(f"【解析指纹失败】 {self.video_name}  {itag} 原因: 无法识别格式或元数据解析失败",
+                               Config.FINGERPRINT_LOG, "warning")
                 continue
         return fingerprint_list
 
@@ -399,7 +409,7 @@ class Video():
             videopath = os.path.join(video_dir, f"{self.video_name}_{itag}.webm")
 
         # 如果文件不存在且没有.part文件，开始下载
-        log_match_result(f"【开始下载】itag={itag}", Config.FINGERPRINT_LOG, "debug")
+        auraprint_log(f"【开始下载】{self.video_name} {itag}", Config.FINGERPRINT_LOG, "debug")
         
         # 使用 Python 模块方式调用 yt-dlp（更可靠）
 
@@ -419,38 +429,38 @@ class Video():
         except subprocess.TimeoutExpired:
             process.terminate()
             stdout, stderr = process.communicate()  #
-            log_match_result(f"【下载失败】itag={itag}：下载超时。下载超时（{ITAG_DL_TIMEOUT}秒），进程被终止。",
-                             Config.FINGERPRINT_LOG, "info")
+            auraprint_log(f"【下载失败】{self.video_name} {itag}：下载超时（{ITAG_DL_TIMEOUT}秒），进程被终止。",
+                             Config.FINGERPRINT_LOG, "debug")
         except Exception as e:
-            log_match_result(f"【下载失败】itag={itag} 错误：{e}", Config.FINGERPRINT_LOG, "error")
+            auraprint_log(f"【下载失败】{self.video_name} {itag} 错误：{e}", Config.FINGERPRINT_LOG, "error")
 
         # 检查下载是否成功，失败/小于MIN_ITAG_DL_SIZE则删掉
         if (os.path.exists(videopath + '.part') and os.path.getsize(videopath + '.part') >= MIN_ITAG_DL_SIZE) or \
                 (os.path.exists(videopath) and os.path.getsize(videopath) >= MIN_ITAG_DL_SIZE):
-            log_match_result(f"【下载完成】{videopath}(.part)", Config.FINGERPRINT_LOG, "info")
+            auraprint_log(f"【下载完成】{videopath}(.part)", Config.FINGERPRINT_LOG, "info")
             return videopath
         else:
             # 如果文件未下载完成或文件小于规定的最小大小，删除文件
             for path in [videopath + '.part', videopath]:
                 if os.path.exists(path):
                     os.remove(path)  # 删除文件
-                    log_match_result(f"【删除文件】{videopath}(.part) 文件大小小于 {MIN_ITAG_DL_SIZE} 字节",
+                    auraprint_log(f"【删除文件】{videopath}(.part) 文件大小小于 {MIN_ITAG_DL_SIZE} 字节",
                                      Config.FINGERPRINT_LOG, "debug")
 
             # 如果文件未成功下载，记录下载失败的详细信息
             if os.path.exists(videopath + '.part'):
-                log_match_result(f"【下载失败】{videopath}(.part) 文件存在，但未成功下载或被中断", Config.FINGERPRINT_LOG,
-                                 "error")
+                auraprint_log(f"【下载失败】{videopath}(.part) 文件存在，但未成功下载或被中断", Config.FINGERPRINT_LOG,
+                                 "warning")
             elif os.path.exists(videopath):
-                log_match_result(f"【下载失败】{videopath} 文件已存在，但大小小于 {MIN_ITAG_DL_SIZE} 字节",
-                                 Config.FINGERPRINT_LOG, "error")
+                auraprint_log(f"【下载失败】{videopath} 文件已存在，但大小小于 {MIN_ITAG_DL_SIZE} 字节",
+                                 Config.FINGERPRINT_LOG, "warning")
             else:
-                log_match_result(f"【下载失败】{videopath} 未下载或文件不存在", Config.FINGERPRINT_LOG, "error")
+                auraprint_log(f"【下载失败】{videopath} 未下载或文件不存在", Config.FINGERPRINT_LOG, "warning")
 
             return None
 
 
-def process_videos(video_list, MAX_THREADS, ITAG_DL_TIMEOUT, MIN_ITAG_DL_SIZE, MAX_RETRIES=3):
+def batch_dl_video_header(video_list, MAX_THREADS, ITAG_DL_TIMEOUT, MIN_ITAG_DL_SIZE, MAX_RETRIES=3):
     """
     批量处理视频下载，支持有限次重试
     
@@ -472,12 +482,37 @@ def process_videos(video_list, MAX_THREADS, ITAG_DL_TIMEOUT, MIN_ITAG_DL_SIZE, M
             for video in video_list:
                 # 检查是否已达到最大重试次数
                 if video in retries and retries[video] > MAX_RETRIES:
-                    log_match_result(f"【跳过重试】视频 {video.url} 已达到最大重试次数({MAX_RETRIES}次)", 
+                    auraprint_log(f"【跳过重试】视频 {video.url} 已达到最大重试次数({MAX_RETRIES}次)", 
                                    Config.FINGERPRINT_LOG, "warning")
                     continue
                 
-                video.get_websource()
-                video.analyse_websource()
+                # 检查websource是否已存在且已解析
+                websource_path = video.down_path + r'websource/' + video.video_name + '.html'
+                is_retry = video in retries  # 判断是否为重试
+                
+                # 如果是第一次处理，需要下载和解析websource
+                if not is_retry:
+                    video.get_websource()
+                    video.analyse_websource()
+                else:
+                    # 重试时，如果websource文件已存在，只需解析（不重新下载）
+                    # 如果itag_list已有值，说明已解析过，跳过解析
+                    if os.path.exists(websource_path):
+                        if not hasattr(video, 'itag_list') or not video.itag_list:
+                            # websource存在但未解析，需要解析
+                            auraprint_log(f"【重试解析websource】{video.video_name} websource已存在，重新解析", 
+                                           Config.FINGERPRINT_LOG, "debug")
+                            video.analyse_websource()
+                        else:
+                            # websource已存在且已解析，直接使用已有的itag_list
+                            auraprint_log(f"【跳过解析websource】{video.video_name} 使用已解析的itag列表（{len(video.itag_list)}个itag）", 
+                                           Config.FINGERPRINT_LOG, "debug")
+                    else:
+                        # 重试时websource不存在，需要重新下载
+                        auraprint_log(f"【重试下载websource】{video.video_name} websource不存在，重新下载", 
+                                       Config.FINGERPRINT_LOG, "warning")
+                        video.get_websource()
+                        video.analyse_websource()
 
                 for itag in video.itag_list:
                     video_dir = os.path.join(video.down_path, 'video', video.video_name)
@@ -491,13 +526,13 @@ def process_videos(video_list, MAX_THREADS, ITAG_DL_TIMEOUT, MIN_ITAG_DL_SIZE, M
                             videopath + '.part') >= MIN_ITAG_DL_SIZE or os.path.exists(videopath) and os.path.getsize(
                         videopath) >= MIN_ITAG_DL_SIZE:
                         # print(f"{itag}.part exists.")
-                        log_match_result(f"【下载跳过】{itag}.part 已存在.", Config.FINGERPRINT_LOG, "debug")
+                        auraprint_log(f"【下载跳过】{video.video_name} {itag}.part 已存在.", Config.FINGERPRINT_LOG, "debug")
 
                         continue  # good文件已存在，跳过下载任务
 
                     tasks.append((video, executor.submit(video.download_video, itag, ITAG_DL_TIMEOUT, MIN_ITAG_DL_SIZE)))  # 提交任务
                     # print(f"add {itag}.")
-                    log_match_result(f"【增加itag】{itag}", Config.FINGERPRINT_LOG, "debug")
+                    auraprint_log(f"【增加itag】{video.video_name} {itag}", Config.FINGERPRINT_LOG, "debug")
 
             # 等待所有线程完成
             for video, task in tasks:
@@ -507,14 +542,14 @@ def process_videos(video_list, MAX_THREADS, ITAG_DL_TIMEOUT, MIN_ITAG_DL_SIZE, M
                         # 记录失败，准备重试
                         if video not in current_retries:
                             current_retries[video] = True
-                        log_match_result(f"【下载失败】视频 {video.url} 的某个itag下载失败，将重试", 
+                        auraprint_log(f"【下载失败】 {video.video_name} 的某个itag下载失败，将重试", 
                                        Config.FINGERPRINT_LOG, "debug")
 
                 except Exception as e:
                     # 记录失败，准备重试
                     if video not in current_retries:
                         current_retries[video] = True
-                    log_match_result(f"【下载失败】视频 {video.url} 下载异常: {e}，将重试", 
+                    auraprint_log(f"【下载失败】 {video.video_name} 下载异常: {e}，将重试", 
                                    Config.FINGERPRINT_LOG, "error")
 
         # 更新重试次数并准备下一轮
@@ -528,71 +563,61 @@ def process_videos(video_list, MAX_THREADS, ITAG_DL_TIMEOUT, MIN_ITAG_DL_SIZE, M
             # 如果未达到最大重试次数，加入下一轮重试列表
             if retries[video] <= MAX_RETRIES:
                 next_retry_list.append(video)
-                log_match_result(f"【准备重试】视频 {video.url} 第 {retries[video]} 次重试", 
+                auraprint_log(f"【准备重试】 {video.video_name} 第 {retries[video]} 次重试", 
                                Config.FINGERPRINT_LOG, "info")
             else:
-                log_match_result(f"【下载最终失败】视频 {video.url} 已达到最大重试次数({MAX_RETRIES}次)，停止重试", 
-                               Config.FINGERPRINT_LOG, "error")
+                auraprint_log(f"【下载最终失败】 {video.video_name} 已达到最大重试次数({MAX_RETRIES}次)，停止重试", 
+                               Config.FINGERPRINT_LOG, "warning")
         
         # 更新video_list为需要重试的视频
         video_list = next_retry_list
         
         if video_list:
-            log_match_result(f"【开始下一轮重试】剩余 {len(video_list)} 个视频需要重试", 
+            auraprint_log(f"【开始下一轮重试】剩余 {len(video_list)} 个视频需要重试", 
                            Config.FINGERPRINT_LOG, "info")
 
     # 统计最终结果
     failed_count = sum(1 for count in retries.values() if count > MAX_RETRIES)
     if failed_count > 0:
-        log_match_result(f"【部分下载失败】有 {failed_count} 个视频下载失败，已达到最大重试次数({MAX_RETRIES}次)", 
+        auraprint_log(f"【部分下载失败】有 {failed_count} 个视频下载失败，已达到最大重试次数({MAX_RETRIES}次)", 
                        Config.FINGERPRINT_LOG, "warning")
     else:
-        log_match_result(f"【全部下载完成】", Config.FINGERPRINT_LOG, "info")
+        auraprint_log(f"【全部下载完成】", Config.FINGERPRINT_LOG, "info")
 
 
-def online_get_fingerprint(url, timestamp):
-    flag = 0
-    video = Video(timestamp, url)  # 创建一个视频对象，索引为0
-    video_list = [video]  # 视频对象列表，包含一个视频对象
-
-    process_videos(video_list, Config.MAX_THREADS, Config.ITAG_DL_TIMEOUT, Config.MIN_ITAG_DL_SIZE, Config.MAX_RETRIES)  # 线程控制
-
+def batch_get_fingerprints(video_list):
+    """
+    批量处理多个视频的完整流程：下载、分析、写入CSV
+    
+    Args:
+        video_list: 视频对象列表
+        
+    Returns:
+        dict: {video.url: flag} 每个视频的处理结果
+    """
+    # 1. 批量下载视频
+    batch_dl_video_header(video_list, Config.MAX_THREADS, Config.ITAG_DL_TIMEOUT, Config.MIN_ITAG_DL_SIZE, Config.MAX_RETRIES)
+    
+    # 2. 批量分析指纹
+    all_fingerprint_data = []  # 存储所有视频的指纹数据 [(video, fingerprint_list), ...]
     for video in video_list:
-        fingerprint_list = video.analyse_video()  # 分析文件
-
-    log_match_result(f"【指纹采集完成】", Config.FINGERPRINT_LOG, "info")
-
-    # # 输出 fingerprint_list 列表
-    # print("fingerprint_list:")
-    # for fingerprint in fingerprint_list:
-    #     print(fingerprint)
-
-    # 指纹混合
-    pattern = r'^\d+x\d+$'  # 定义一个正则表达式，匹配视频质量的格式，如1280x720
-    current_category_video = []
-    current_category_audio = []
-    for row in fingerprint_list:
-        if re.match(pattern, row[3]):  # 假设视频质量在第4列
-            current_category_video.append(row)  # 如果是视频质量，初始化视频指纹数据
-        else:
-            current_category_audio.append(row)  # 如果不是视频质量，初始化音频指纹数据
-
-    # # 输出 current_category_video 列表
-    # print("Video List:")
-    # for video in current_category_video:
-    #     print(video)
-
-    # # 输出 current_category_audio 列表
-    # print("\nAudio List:")
-    # for audio in current_category_audio:
-    #     print(audio)
-
-    # 写入指纹库
+        try:
+            fingerprint_list = video.analyse_video()  # 分析文件
+            all_fingerprint_data.append((video, fingerprint_list))
+            auraprint_log(f"【指纹分析完成】{video.video_name} 分析完成", Config.FINGERPRINT_LOG, "debug")
+        except Exception as e:
+            auraprint_log(f"【指纹分析失败】{video.video_name} 分析出错: {e}", Config.FINGERPRINT_LOG, "error")
+            all_fingerprint_data.append((video, []))
+    
+    # 3. 批量写入CSV
     # 检查文件是否存在，如果不存在或为空则写入表头
     file_exists = os.path.exists(Config.FINGERPRINT_FILE)
     write_header = False
     if not file_exists or os.path.getsize(Config.FINGERPRINT_FILE) == 0:
         write_header = True
+    
+    results = {}  # {url: flag}
+    pattern = r'^\d+x\d+$'  # 定义一个正则表达式，匹配视频质量的格式，如1280x720
     
     with open(Config.FINGERPRINT_FILE, 'a', newline='', encoding='utf-8') as processed_file:
         writer = csv.writer(processed_file)
@@ -603,46 +628,59 @@ def online_get_fingerprint(url, timestamp):
                      'video_fp', 'video_timeline', 'audio_fp', 'audio_timeline']
             writer.writerow(header)
         
-        # 去重：使用集合记录已写入的组合，避免重复写入
-        written_combinations = set()
-        written_count = 0  # 记录实际写入的行数
-        
-        for video_row in current_category_video:
-            for audio_row in current_category_audio:
-                # 创建唯一标识：video_itag + audio_itag
-                combination_key = (video_row[2], audio_row[2])  # video_itag, audio_itag
-                if combination_key in written_combinations:
-                    log_match_result(f"【跳过重复组合】video: {video_row[1]} video_itag: {video_row[2]} audio_itag: {audio_row[2]} 已存在，跳过",
-                                   Config.FINGERPRINT_LOG, "debug")
-                    continue
-                written_combinations.add(combination_key)
-                writer.writerow([video_row[0], video_row[1], video_row[2], video_row[3],
-                                 video_row[4], audio_row[2], audio_row[3],
-                                 audio_row[4], video_row[9], video_row[12],
-                                 audio_row[9], audio_row[12]])
-                written_count += 1
-        
-        # 根据实际写入情况设置flag和日志
-        if written_count > 0:
-            flag = 'right'
-            log_match_result(f"新指纹添加到指纹库中: {timestamp}-{url} (写入 {written_count} 条记录)", 
-                           Config.FINGERPRINT_LOG, "info")
-        else:
-            flag = 'no_data'
-            if len(current_category_video) == 0 and len(current_category_audio) == 0:
-                log_match_result(f"该视频未添加新的指纹: {timestamp}-{url} 原因: 无视频和音频itag解析成功", 
-                               Config.FINGERPRINT_LOG, "warning")
-            elif len(current_category_video) == 0:
-                log_match_result(f"该视频未添加新的指纹: {timestamp}-{url} 原因: 无视频itag解析成功 (有 {len(current_category_audio)} 个音频itag)", 
-                               Config.FINGERPRINT_LOG, "warning")
-            elif len(current_category_audio) == 0:
-                log_match_result(f"该视频未添加新的指纹: {timestamp}-{url} 原因: 无音频itag解析成功 (有 {len(current_category_video)} 个视频itag)", 
-                               Config.FINGERPRINT_LOG, "warning")
+        # 处理每个视频的指纹数据
+        for video, fingerprint_list in all_fingerprint_data:
+            # 指纹混合：分离视频和音频指纹
+            current_category_video = []
+            current_category_audio = []
+            for row in fingerprint_list:
+                if re.match(pattern, row[3]):  # 假设视频质量在第4列
+                    current_category_video.append(row)  # 如果是视频质量，初始化视频指纹数据
+                else:
+                    current_category_audio.append(row)  # 如果不是视频质量，初始化音频指纹数据
+            
+            # 每个视频独立去重：使用集合记录该视频内已写入的组合，避免同一视频内重复写入
+            written_combinations = set()
+            written_count = 0  # 记录该视频实际写入的行数
+            
+            for video_row in current_category_video:
+                for audio_row in current_category_audio:
+                    # 创建唯一标识：video_itag + audio_itag
+                    combination_key = (video_row[2], audio_row[2])  # video_itag, audio_itag
+                    if combination_key in written_combinations:
+                        auraprint_log(f"【跳过重复组合】{video.video_name} video_itag: {video_row[2]} audio_itag: {audio_row[2]} 在该视频内已存在，跳过",
+                                       Config.FINGERPRINT_LOG, "debug")
+                        continue
+                    written_combinations.add(combination_key)
+                    writer.writerow([video_row[0], video_row[1], video_row[2], video_row[3],
+                                     video_row[4], audio_row[2], audio_row[3],
+                                     audio_row[4], video_row[9], video_row[12],
+                                     audio_row[9], audio_row[12]])
+                    written_count += 1
+            
+            # 根据实际写入情况设置flag和日志
+            if written_count > 0:
+                flag = 'right'
+                auraprint_log(f"【新指纹添加】{video.video_name} 添加到指纹库中 (写入 {written_count} 条记录)", 
+                               Config.FINGERPRINT_LOG, "info")
             else:
-                log_match_result(f"该视频未添加新的指纹: {timestamp}-{url} 原因: 所有组合都已存在或重复", 
-                               Config.FINGERPRINT_LOG, "warning")
-
-    return flag
+                flag = 'no_data'
+                if len(current_category_video) == 0 and len(current_category_audio) == 0:
+                    auraprint_log(f"【未添加指纹】{video.video_name} 原因: 无视频和音频itag解析成功", 
+                                   Config.FINGERPRINT_LOG, "warning")
+                elif len(current_category_video) == 0:
+                    auraprint_log(f"【未添加指纹】{video.video_name} 原因: 无视频itag解析成功 (有 {len(current_category_audio)} 个音频itag)", 
+                                   Config.FINGERPRINT_LOG, "warning")
+                elif len(current_category_audio) == 0:
+                    auraprint_log(f"【未添加指纹】{video.video_name} 原因: 无音频itag解析成功 (有 {len(current_category_video)} 个视频itag)", 
+                                   Config.FINGERPRINT_LOG, "warning")
+                else:
+                    auraprint_log(f"【未添加指纹】{video.video_name} 原因: 所有组合都已存在或重复", 
+                                   Config.FINGERPRINT_LOG, "warning")
+            
+            results[video.url] = flag
+    
+    return results
 
 
 if __name__ == "__main__":
@@ -661,26 +699,59 @@ if __name__ == "__main__":
         open(Config.URL_FILE, "w").close()
 
     # 去重
-    # url_list = list(set(url_list))
-    print(f"从 CSV 读取到 {len(url_list)} 个 URL")
+    url_list = list(set(url_list))
+    print(f"从 CSV 读取到 {len(url_list)} 个待采集视频 URL")
 
-    # 2. 按序批量采集
-    for url in url_list:
-        log_match_result(f"采集开始: {url}", Config.FINGERPRINT_LOG, "info")
+    if not url_list:
+        print("没有待采集的URL，程序退出。")
+        exit(0)
 
+    # 2. 批量创建Video对象
+    auraprint_log(f"批量处理开始准备处理 {len(url_list)} 个视频", Config.FINGERPRINT_LOG, "debug")
+    video_list = []
+    base_timestamp = int(time.time())
+    
+    for idx, url in enumerate(url_list):
         try:
-            timestamp = int(time.time())
-            flag = online_get_fingerprint(url, timestamp)
+            # 为每个视频分配唯一的时间戳（避免ID冲突）
+            timestamp = base_timestamp + idx
+            video = Video(timestamp, url)
+            video_list.append(video)
+            auraprint_log(f"创建视频对象 {video.video_name} URL: {url}", Config.FINGERPRINT_LOG, "debug")
         except Exception as e:
-            log_match_result(f"采集指纹时出错: {e}", Config.FINGERPRINT_LOG, "error")
+            auraprint_log(f"创建视频对象失败 URL: {url} 错误: {e}", Config.FINGERPRINT_LOG, "error")
             continue
 
-        if flag == 'right':
-            log_match_result(f"采集成功: {url}", Config.FINGERPRINT_LOG, "info")
-        else:
-            log_match_result(f"采集失败: {url}", Config.FINGERPRINT_LOG, "warning")
+    if not video_list:
+        print("没有成功创建的视频对象，程序退出。")
+        exit(0)
 
-    print("批量采集流程完成。")
+    # 3. 批量处理所有视频（下载、分析、写入）
+    auraprint_log(f"批量处理开始 {len(video_list)} 个视频", Config.FINGERPRINT_LOG, "debug")
+    try:
+        results = batch_get_fingerprints(video_list)
+        
+        # 4. 统计处理结果
+        success_count = sum(1 for flag in results.values() if flag == 'right')
+        no_data_count = sum(1 for flag in results.values() if flag == 'no_data')
+        total_count = len(results)
+        
+        auraprint_log(f"批量处理完成 总计: {total_count} 个视频, 成功: {success_count} 个, 无数据: {no_data_count} 个", 
+                        Config.FINGERPRINT_LOG, "info")
+        
+        # 输出每个视频的处理结果
+        for url, flag in results.items():
+            if flag == 'right':
+                auraprint_log(f"采集成功 {url}", Config.FINGERPRINT_LOG, "info")
+            else:
+                auraprint_log(f"采集失败 {url}", Config.FINGERPRINT_LOG, "warning")
+                
+    except Exception as e:
+        auraprint_log(f"批量处理异常：批量处理过程中出错: {e}", Config.FINGERPRINT_LOG, "error")
+        import traceback
+        auraprint_log(f"批量处理异常详情：{traceback.format_exc()}", Config.FINGERPRINT_LOG, "error")
+
+    print("批量采集完成。")
 
 
 
