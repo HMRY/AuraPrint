@@ -14,7 +14,7 @@ class Config:
     # 采指纹日志文件
     FINGERPRINT_LOG = './log/'   
     # 日志级别 ：DEBUG/INFO/WARNING/ERROR
-    LOG_LEVEL = logging.DEBUG
+    LOG_LEVEL = logging.INFO
 
     #采集指纹参数配置
     MAX_THREADS = 1
@@ -27,7 +27,7 @@ class Config:
 
 
 # 记录匹配日志到txt文件
-def log_match_result(data, dir, level='INFO', log_name="VIDEO_LOG"):
+def auraprint_log(data, dir, level='INFO', log_name="AURAPRINT_LOG"):
     """
     记录日志消息到文件
     :param data: str, 日志内容
